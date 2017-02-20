@@ -1,0 +1,6 @@
+[package]
+name = "i3ttd"
+version = "0.1.0"
+authors = ["billiob"]
+
+[dependencies]
