@@ -1,6 +1,12 @@
 [package]
 name = "i3ttd"
 version = "0.1.0"
-authors = ["billiob"]
+authors = ["Boris Faure <boris@fau.re>"]
 
 [dependencies]
+debug_macros = "*"
+docopt = "*"
+i3ipc = "*"
+serde = "*"
+serde_json = "*"
+serde_derive = "*"
