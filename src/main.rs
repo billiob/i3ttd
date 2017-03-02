@@ -7,6 +7,7 @@ extern crate serde_json;
 extern crate debug_macros;
 extern crate docopt;
 extern crate i3ipc;
+extern crate time;
 
 
 use docopt::Docopt;
@@ -42,9 +43,31 @@ Options:
     <config_file>        A JSON configuration file
 ";
 
+struct State {
+    current_category: Option<String>,
+    last_time: time::Timespec,
+}
 struct Ctx {
     cfg: Config,
-    current_category: Option<String>,
+    state: State,
+}
+
+fn finish_old_category(state: &mut State, cat: String)
+{
+    let now = time::now().to_timespec();
+    state.current_category = None;
+    let diff = now - state.last_time;
+    let num_seconds = diff.num_seconds();
+    if num_seconds > 0 {
+        println!("{},{}", num_seconds, cat);
+    }
+}
+
+fn new_category(state: &mut State, cat: &String)
+{
+    let now = time::now().to_timespec();
+    state.current_category = Some(cat.clone());
+    state.last_time = now;
 }
 
 fn handle_workspace_event(ctx: &mut Ctx, e: WorkspaceEventInfo) {
@@ -59,42 +82,33 @@ fn handle_workspace_event(ctx: &mut Ctx, e: WorkspaceEventInfo) {
     }
     let n = e.current.unwrap();
     if n.name.is_none() {
-        if ctx.current_category.is_none() {
-            return;
+        if let Some(cat) = ctx.state.current_category.take() {
+            finish_old_category(&mut ctx.state, cat);
         }
-        ctx.current_category = None;
-        /* TODO: finish old category */
         return;
     }
     let name = n.name.unwrap();
     for w in &ctx.cfg.workspaces {
         if w.name == name {
-            if let Some(cat) = ctx.current_category.take() {
+            if let Some(cat) = ctx.state.current_category.take() {
                 if cat != w.category {
-                    /* TODO: finish old category */
-                    ctx.current_category = Some(w.category.clone());
-                    /* TODO: new category */
+                    finish_old_category(&mut ctx.state, cat);
+                    new_category(&mut ctx.state, &w.category);
                 }
             } else {
-                ctx.current_category = Some(w.category.clone());
-                /* TODO: new category */
+                new_category(&mut ctx.state, &w.category);
             }
             return;
         }
     }
-    if let Some(_) = ctx.current_category.take() {
-        /* TODO: finish old category */
-        ctx.current_category = None;
+    if let Some(cat) = ctx.state.current_category.take() {
+        finish_old_category(&mut ctx.state, cat);
     }
 }
 
-fn load_config(file_path: &str) -> Ctx {
+fn load_config(file_path: &str) -> Config {
     let contents = File::open(file_path).unwrap();
-    let cfg = serde_json::from_reader(contents).unwrap();
-    Ctx {
-        cfg: cfg,
-        current_category: None,
-    }
+    serde_json::from_reader(contents).unwrap()
 }
 
 fn main() {
@@ -104,7 +118,13 @@ fn main() {
                       .unwrap_or_else(|e| e.exit());
 
     let config_file = args.get_str("<config_file>");
-    let mut ctx = load_config(config_file);
+    let mut ctx = Ctx {
+        cfg: load_config(config_file),
+        state: State {
+            current_category: None,
+            last_time: time::now().to_timespec(),
+        },
+    };
     // establish connection.
     let mut listener = I3EventListener::connect().unwrap();
 
