@@ -31,7 +31,7 @@ pub struct Config {
 
 
 const USAGE: &'static str = "
-Time Tracking server for i3.
+Time Tracking Deamon for i3.
 
 Usage: i3ttd [options] <config_file>
        i3ttd -v | --version
