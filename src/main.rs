@@ -54,12 +54,13 @@ struct Ctx {
 
 fn finish_old_category(state: &mut State, cat: String)
 {
-    let now = time::now().to_timespec();
+    let now = time::now();
+    let now_tm = now.to_timespec();
     state.current_category = None;
-    let diff = now - state.last_time;
+    let diff = now_tm - state.last_time;
     let num_seconds = diff.num_seconds();
     if num_seconds > 0 {
-        println!("{},{}", num_seconds, cat);
+        println!("{},{},{}", now.rfc3339(),num_seconds, cat);
     }
 }
 
