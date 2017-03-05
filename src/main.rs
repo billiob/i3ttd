@@ -45,7 +45,7 @@ Options:
 
 struct State {
     current_category: Option<String>,
-    last_time: time::Timespec,
+    last_time: time::Tm,
 }
 struct Ctx {
     cfg: Config,
@@ -57,16 +57,18 @@ fn finish_old_category(state: &mut State, cat: String)
     let now = time::now();
     let now_tm = now.to_timespec();
     state.current_category = None;
-    let diff = now_tm - state.last_time;
+    let before = state.last_time;
+    let before_tm = before.to_timespec();
+    let diff = now_tm - before_tm;
     let num_seconds = diff.num_seconds();
     if num_seconds > 0 {
-        println!("{},{},{}", now.rfc3339(),num_seconds, cat);
+        println!("{},{},{},{}", before.rfc3339(), now.rfc3339(),num_seconds, cat);
     }
 }
 
 fn new_category(state: &mut State, cat: &String)
 {
-    let now = time::now().to_timespec();
+    let now = time::now();
     state.current_category = Some(cat.clone());
     state.last_time = now;
 }
@@ -123,7 +125,7 @@ fn main() {
         cfg: load_config(config_file),
         state: State {
             current_category: None,
-            last_time: time::now().to_timespec(),
+            last_time: time::now(),
         },
     };
     // establish connection.
