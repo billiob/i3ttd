@@ -3,8 +3,6 @@ extern crate serde_derive;
 
 extern crate serde_json;
 
-#[macro_use]
-extern crate debug_macros;
 extern crate docopt;
 extern crate i3ipc;
 extern crate time;
